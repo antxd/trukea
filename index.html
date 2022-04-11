@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <!-- Required meta tags -->
+        <meta charset="utf-8">
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+        <title>Trukea - Basic Coin Converter</title>
+        <meta name="title" content="Trukea">
+        <meta name="description" content="Basic Coin Converter, between USD,EUR,PLCU">
+        <meta name="keywords" content="coin,cryptocoin,exchange,rate,plc,plcu,cambiar,converter,euro,dolar,ultima">
+        <meta name="robots" content="index, follow">
+        <meta name="language" content="English">
+        <link rel="shortcut icon" href="favicon.png">
+        <style type="text/css">
+            @import url('https://fonts.googleapis.com/css2?family=Audiowide&display=swap');
+            .logo{
+                font-family: 'Audiowide', cursive;
+            }
+            #home{
+                height: 100vh;
+            }
+            @media(max-width: 992px) {
+                #FormCalcu {
+                    padding: 1rem;
+                }
+                #FormCalcu .col, #FormCalcu .col-1 {
+                    width: 100%;
+                    display: block;
+                    flex: initial;
+                    margin-bottom: 0.5rem;
+                }
+            }
+        </style>
+    </head>
+<body>
+    <nav class="navbar fixed-top navbar-light">
+      <div class="container-fluid py-4">
+        <h1 class="h1 logo mx-auto">Trukea</h1>
+      </div>
+    </nav>
+    <section id="home">
+        <div class="row row h-100 align-items-center">
+            <div class="col-lg-8 mx-auto py-2">
+                <form id="FormCalcu">
+                    <p class="text-center">Basic coin converter</p>
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <input class="form-control form-control-lg" id="from"
+                            type="number" step="any" min="0" placeholder="0" value="1">
+                        </div>
+                        <div class="col">
+                            <select class="form-select form-select-lg" id="fromCoin">
+                              <option value="PLCU">PLCU</option>
+                              <option value="USD">USD</option>
+                              <option value="EUR">EUR</option>
+                              <!--<option value="BTC">BTC</option>
+                              <option value="LTC">LTC</option>
+                              <option value="ETH">ETH</option>
+                              <option value="BCH">BCH</option>
+                              <option value="USDT">USDT</option>
+                              <option value="COP">COP</option>-->
+                            </select>
+                        </div>
+                        <div class="col-1 text-center fw-bold fs-1">
+                            =
+                        </div>
+                        <div class="col">
+                            <input class="form-control form-control-lg" id="to"
+                            type="number" step="any" min="0" placeholder="0">
+                        </div>
+                        <div class="col">
+                            <select class="form-select form-select-lg" id="toCoin">
+                              <option value="PLCU">PLCU</option>
+                              <option value="USD" selected>USD</option>
+                              <option value="EUR">EUR</option>
+                              <!--
+                              <option value="BTC">BTC</option>
+                              <option value="LTC">LTC</option>
+                              <option value="ETH">ETH</option>
+                              <option value="BCH">BCH</option>
+                              <option value="USDT">USDT</option>
+                              <option value="USD" selected>USD</option>
+                              <option value="EUR">EUR</option>
+                              <option value="COP">COP</option>-->
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </section>
+    <div class="copyright fixed-bottom p-3">
+        <div class="small text-center">
+            &copy; 2022 - Trukea
+            <div class="d-block small text-muted">
+                The information shown here is for reference only, Trukea is not responsible for the actions carried out based on the data presented here.
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script type="text/javascript">
+    (function($){
+        var trukeaApp = {
+            config: {
+                coins: {
+                    EUR:0,
+                    COP:0,
+                    USDT:0,
+                    BTC:0,
+                    LTC:0,
+                    ETH:0,
+                    BCH:0,
+                    PLCU:0
+                },
+                minexchange:1,
+                interval : null
+            },
+            get_values_base: function(){
+                $.get('api.json',function(data){
+                    $.each(data,function(i,v){
+                        trukeaApp.config.coins[i] = v;
+                    })
+                    trukeaApp.calculate()
+                })
+            },
+            cron: function(){
+                trukeaApp.config.interval = setInterval(function(){
+                    trukeaApp.get_values_base()
+                },300000)
+            },
+            calculate: function(){
+                var rate = 0, from = parseFloat($('#from').val()),to = parseFloat($('#to').val()),fromCoin = $('#fromCoin').val(),toCoin = $('#toCoin').val();
+                if (fromCoin === toCoin) {
+                    return false;
+                }
+                if (fromCoin === 'PLCU' && toCoin === 'USD') {
+                    rate = from*trukeaApp.config.coins[fromCoin];
+                    rate = rate.toFixed(2)
+                }
+                if (fromCoin === 'PLCU' && toCoin === 'EUR') {
+                    rate = from*trukeaApp.config.coins[fromCoin];
+                    rate = rate*trukeaApp.config.coins[toCoin];
+                    rate = rate.toFixed(2)
+                }
+                if (fromCoin === 'USD' && toCoin === 'PLCU') {
+                    rate = from/trukeaApp.config.coins[toCoin];
+                    rate = rate.toFixed(8)
+                }
+                if (fromCoin === 'EUR' && toCoin === 'PLCU') {
+                    rate = from/trukeaApp.config.coins[toCoin];
+                    rate = rate/trukeaApp.config.coins[fromCoin];
+                    rate = rate.toFixed(8)
+                }
+                if (fromCoin === 'EUR' && toCoin === 'USD') {
+                    rate = from/trukeaApp.config.coins[fromCoin];
+                    rate = rate.toFixed(2)
+                }
+                if (fromCoin === 'USD' && toCoin === 'EUR') {
+                    rate = from*trukeaApp.config.coins[toCoin];
+                    rate = rate.toFixed(2)
+                }
+                $('#to').val(rate)
+            },
+            run: function(){
+                trukeaApp.get_values_base()
+                $('#FormCalcu').on('keyup change',function(){
+                    trukeaApp.calculate()
+                })
+            }
+        };
+        window.addEventListener('load', function(e) {
+            trukeaApp.run();
+        });
+        //console.log(trukeaApp.config.coins['BTC'])
+    })(jQuery);
+    </script>
+</body>
+</html>
