@@ -13,8 +13,9 @@ function convertCurrency($amount,$from_currency,$to_currency){
     $total = $val * $amount;
     return $total;
 }
-$format['EUR'] = convertCurrency(1,'USD','EUR');
-$format['COP'] = convertCurrency(1,'USD','COP');
+//$format['EUR'] = convertCurrency(1,'USD','EUR');
+//$format['COP'] = convertCurrency(1,'USD','COP');
+$format['EUR'] = 0.92;
 /*CRYPTO*/
 $url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest';
 //BTC, LTC, ETH, BCH, USDT, PLCU
