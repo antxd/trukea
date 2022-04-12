@@ -1,62 +1,75 @@
 <?php
-$format = array();
+/************************************/
+/* Basic cron price updater.
+ * Autor: Jose Marin - https://github.com/antxd
+ * License: MIT
+ * 12/04/2022
+ * Version: Beta 0.1.2
+/************************************/
+function CallAPI($method, $url, $data = false, $json = false){
+    // Method: POST, PUT, GET etc
+    // Data: array("param" => "value") ==> index.php?param=value
+    $curl = curl_init();
+    switch ($method){
+        case "POST":
+            curl_setopt($curl, CURLOPT_POST, 1);
+            if ($data)
+                curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
+            break;
+        case "PUT":
+            curl_setopt($curl, CURLOPT_PUT, 1);
+            break;
+        default:
+            if ($data)
+                $url = sprintf("%s?%s", $url, http_build_query($data));
+    }
+    // Optional Authentication:
+    //curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+    //curl_setopt($curl, CURLOPT_USERPWD, "username:password");
+    if ($json) {
+        curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type: application/json', 'Accept: application/json'));
+    }
+    curl_setopt($curl, CURLOPT_URL, $url);
+    curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+    $result = curl_exec($curl);
+    curl_close($curl);
+    return $result;
+}
 /*FIAT*/
-function convertCurrency($amount,$from_currency,$to_currency){
+function getCurrency($symbol){
     $apikey = '6f6a03deaf95a8578db7';
-    $from_Currency = urlencode($from_currency);
-    $to_Currency = urlencode($to_currency);
-    $query =  "{$from_Currency}_{$to_Currency}";
-    // change to the free URL if you're using the free version
-    $json = file_get_contents("https://free.currconv.com/api/v7/convert?q={$query}&compact=ultra&apiKey={$apikey}");
+    $query = 'USD_EUR,USD_COP';
+    $json = CallAPI('GET',"https://free.currconv.com/api/v7/convert?q={$query}&compact=ultra&apiKey={$apikey}");
     $obj = json_decode($json, true);
-    $val = floatval($obj["$query"]);
-    $total = $val * $amount;
-    return $total;
+    $val = floatval($obj["$symbol"]);
+    return $val;
 }
-//$format['EUR'] = convertCurrency(1,'USD','EUR');
-//$format['COP'] = convertCurrency(1,'USD','COP');
-$format['EUR'] = 0.92;
 /*CRYPTO*/
-$url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest';
-//BTC, LTC, ETH, BCH, USDT, PLCU
-$parameters = [
-    'id' => '1,2,1027,1831,825,17971',
-    //'start' => '1',
-    //'limit' => '5000',
-    'convert' => 'USD'
-];
-
-/*$url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest';
-$parameters = [
-  'start' => '1',
-  'limit' => '5000',
-  'convert' => 'USD'
-];*/
-
-$headers = [
-  'Accepts: application/json',
-  'X-CMC_PRO_API_KEY: 0249fa9b-bef6-4da4-8a5d-7c495ab99a22'
-];
-$qs = http_build_query($parameters); // query string encode the parameters
-$request = "{$url}?{$qs}"; // create the request URL
-
-$curl = curl_init(); // Get cURL resource
-// Set cURL options
-curl_setopt_array($curl, array(
-  CURLOPT_URL => $request,            // set the request URL
-  CURLOPT_HTTPHEADER => $headers,     // set the headers 
-  CURLOPT_RETURNTRANSFER => 1         // ask for raw response instead of bool
-));
-
-$response = curl_exec($curl); // Send the request, save the response
-$coinmarket = json_decode($response);
-foreach ($coinmarket->data as $key => $value) {
-    $format[$value->symbol] = $value->quote->USD->price;
+function GetCryptoCurrency($symbol){
+    $json = CallAPI('GET',"https://coinsbit.io/api/v1/public/ticker?market={$symbol}");
+    $obj = json_decode($json, true);
+    //PLCU_USDT
+    //BTC_USDT
+    $val = (!empty($obj['success']))?floatval($obj['result']['ask']):0;
+    return $val;
 }
-//echo "<pre>";
-//print_r(json_decode($response)); // print json decoded response
-//echo "</pre>";
-curl_close($curl); // Close request
+$formatbase = json_decode(file_get_contents('api.json'));
+$format = array();
+$time = time();
+foreach ($formatbase as $key => $value) {
+    $format[$key] = [$value[0],$value[1]];
+    $last_modified = new DateTime(date('Y-m-d H:i:s', $value[1] ));
+    $since_last_modified = $last_modified->diff(new DateTime(date('Y-m-d H:i:s',$time)));
+    if ($key === 'EUR' && $since_last_modified->i >= 30 || $since_last_modified->h > 1 || $since_last_modified->d > 0) {
+        $format['EUR'] = [getCurrency('USD_EUR'),$time];
+        echo "update EUR";
+    }
+    if ($key === 'PLCU' && $since_last_modified->i >= 5 || $since_last_modified->h > 0 || $since_last_modified->d > 0) {
+        $format['PLCU'] = [GetCryptoCurrency('PLCU_USDT'),$time];
+        echo "update PLCU";
+    }
+}
+//WRITE JSON
 $fp = fopen('api.json', 'w');
 fwrite($fp, json_encode($format));
 fclose($fp);

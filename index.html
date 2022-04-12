@@ -122,7 +122,7 @@
                 var  d = new Date(), time = d.getTime();
                 $.get('api.json?v='+time,function(data){
                     $.each(data,function(i,v){
-                        trukeaApp.config.coins[i] = v;
+                        trukeaApp.config.coins[i] = v[0];
                     })
                     trukeaApp.calculate()
                 })
