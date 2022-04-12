@@ -96,6 +96,7 @@
             &copy; 2022 - Trukea
             <div class="d-block small text-muted">
                 The information shown here is for reference only, Trukea is not responsible for the actions carried out based on the data presented here.
+                <span class="d-block small text-dark">v0.1.2b</span>
             </div>
         </div>
     </div>
@@ -157,11 +158,11 @@
                 }
                 if (fromCoin === 'EUR' && toCoin === 'USD') {
                     rate = from/trukeaApp.config.coins[fromCoin];
-                    rate = rate.toFixed(2)
+                    rate = rate.toFixed(4)
                 }
                 if (fromCoin === 'USD' && toCoin === 'EUR') {
                     rate = from*trukeaApp.config.coins[toCoin];
-                    rate = rate.toFixed(2)
+                    rate = rate.toFixed(4)
                 }
                 $('#to').val(rate)
             },
